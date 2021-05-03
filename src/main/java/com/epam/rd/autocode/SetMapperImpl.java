@@ -60,10 +60,7 @@ public class SetMapperImpl implements SetMapper<Set<Employee>> {
             e.printStackTrace();
         }
         try {
-            Connection connection = DriverManager.getConnection(
-                    URL,
-                    USER, PASSWORD
-            );
+            Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(SQL_SELECT);
             while (rs.next()) {
