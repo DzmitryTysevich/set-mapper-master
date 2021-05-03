@@ -5,7 +5,11 @@ import com.epam.rd.autocode.domain.FullName;
 import com.epam.rd.autocode.domain.Position;
 
 import java.math.BigInteger;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
