@@ -28,21 +28,34 @@ public class SetMapperImpl implements SetMapper<Set<Employee>> {
     private static final String PASSWORD = "sa";
     private static final String SQL_SELECT = "select * from EMPLOYEE E left join EMPLOYEE N on E.MANAGER = N.ID";
     private static final String MANAGER = "manager";
+    private static final String DEPARTMENT = "DEPARTMENT";
 
     @Override
     public Set<Employee> mapSet(ResultSet resultSet) {
         Set<Employee> employees = new HashSet<>();
+        Set<Employee> oneEmployee = new HashSet<>();
+        Set<Employee> employeesFromDep = new HashSet<>();
+        Set<Integer> departmentCounter = new HashSet<>();
+
         try {
             while (resultSet.next()) {
-                employees.add(getEmployee(resultSet));
+                departmentCounter.add(resultSet.getInt("DEPARTMENT"));
+                employees.add(getEmployee(resultSet, getManager(resultSet)));
+                oneEmployee.add(getEmployee(resultSet, null));
+                employeesFromDep.add(getEmployee(resultSet, getManagerFromOneDep(resultSet)));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return employees;
+        if (employees.size() > 1 && departmentCounter.size() > 1) {
+            return employees;
+        }
+        if (employees.size() > 1 && departmentCounter.size() == 1) {
+            return employeesFromDep;
+        } else return oneEmployee;
     }
 
-    private Employee getEmployee(ResultSet resultSet) throws SQLException {
+    private Employee getEmployee(ResultSet resultSet, Employee manager) throws SQLException {
         return new Employee(
                 new BigInteger(String.valueOf(resultSet.getInt(ID))),
                 new FullName(
@@ -52,7 +65,7 @@ public class SetMapperImpl implements SetMapper<Set<Employee>> {
                 Position.valueOf(resultSet.getString(POSITION)),
                 resultSet.getDate(HIREDATE).toLocalDate(),
                 resultSet.getBigDecimal(SALARY),
-                getManager(resultSet)
+                manager
         );
     }
 
@@ -69,17 +82,30 @@ public class SetMapperImpl implements SetMapper<Set<Employee>> {
             ResultSet rs = statement.executeQuery(SQL_SELECT);
             while (rs.next()) {
                 if (resultSet.getInt(MANAGER) == (rs.getInt(ID))) {
-                    manager = new Employee(
-                            new BigInteger(String.valueOf(rs.getInt(ID))),
-                            new FullName(
-                                    rs.getString(FIRST_NAME),
-                                    rs.getString(LAST_NAME),
-                                    rs.getString(MIDDLE_NAME)),
-                            Position.valueOf(rs.getString(POSITION)),
-                            rs.getDate(HIREDATE).toLocalDate(),
-                            rs.getBigDecimal(SALARY),
-                            getManager(rs)
-                    );
+                    manager = getEmployee(rs, getManager(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return manager;
+    }
+
+    private Employee getManagerFromOneDep(ResultSet resultSet) throws SQLException {
+        Employee manager = null;
+        try {
+            Class.forName(JDBC_DRIVER);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        try {
+            Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery(SQL_SELECT);
+            while (rs.next()) {
+                if (resultSet.getInt(MANAGER) == (rs.getInt(ID)) &&
+                        resultSet.getString(DEPARTMENT).equals(rs.getString(DEPARTMENT))) {
+                    manager = getEmployee(rs, null);
                 }
             }
         } catch (SQLException e) {
